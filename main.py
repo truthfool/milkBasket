@@ -2,17 +2,30 @@ from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.firefox.service import Service as FirefoxService
 from webdriver_manager.firefox import GeckoDriverManager
+from dotenv import load_dotenv
+import os
+import logging
+
+load_dotenv()
+
+_logger = logging.getLogger(__name__)
 
 driver_path = "path/to/your/driver"
 service = FirefoxService(executable_path=GeckoDriverManager().install())
 
 driver = webdriver.Firefox(service=service)
 
-URL = "https://www.milkbasket.com/"
+URL = os.environ.get("URL")
 
 
 def getAllProducts(soup):
-    products_list = soup.find_all("div", {"class": "all-products"})  # Returns a list
+    try:
+        products_list = soup.find_all(
+            "div", {"class": "all-products"}
+        )  # Returns a list
+    except BaseException as e:
+        _logger.info(e)
+
     products = []
     for product in products_list:
         productName = product.find("div", {"class": "product-name"}).text.strip()
@@ -34,17 +47,23 @@ def getAllProducts(soup):
 
 def scrapProductData():
     all_products_url = URL + "products"
-    service.get(all_products_url)
-    # Scraping the product data
-    html_doc = service.page_source
-    soup = BeautifulSoup(html_doc, "html.parser")
-    return soup
+    try:
+        service.get(all_products_url)
+        # Scraping the product data
+        html_doc = service.page_source
+        soup = BeautifulSoup(html_doc, "html.parser")
+        return soup
+    except BaseException as e:
+        _logger.info(e)
 
 
 def driverFunction():
     soup = scrapProductData()
-    productsList = getAllProducts(soup)
-    return productsList
+    try:
+        productsList = getAllProducts(soup)
+        return productsList
+    except BaseException as e:
+        _logger.info(e)
 
 
 if __name__ == "__main__":
